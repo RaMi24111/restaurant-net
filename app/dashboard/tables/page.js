@@ -67,14 +67,14 @@ export default function TablesPage() {
   const toggleStatus = async (table) => {
       const newStatus = table.status === 'Occupied' ? 'Empty' : 'Occupied';
       try {
-          const res = await fetch(`/api/tables/${table._id}`, {
+          const res = await fetch(`/api/tables/${table.id}`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ status: newStatus })
           });
           const data = await res.json();
           if (data.success) {
-              setTables(tables.map(t => t._id === table._id ? data.data : t));
+              setTables(tables.map(t => t.id === table.id ? data.data : t));
           }
       } catch (err) {
           console.error(err);
@@ -102,7 +102,7 @@ export default function TablesPage() {
       if (!confirm('Remove this table?')) return;
       try {
           await fetch(`/api/tables/${id}`, { method: 'DELETE' });
-          setTables(tables.filter(t => t._id !== id));
+          setTables(tables.filter(t => t.id !== id));
       } catch (err) {
           console.error(err);
       }
@@ -128,14 +128,14 @@ export default function TablesPage() {
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                    {tables.map((table) => (
+                    {tables.map((table, index) => (
                         <motion.div 
-                            key={table._id}
+                            key={table.id}
                             layout
                             className={`relative p-6 rounded-xl border flex flex-col items-center justify-center gap-4 transition-all shadow-sm ${table.status === 'Occupied' ? 'bg-ruby-red border-ruby-red text-white' : 'bg-card-white border-gold-start/30 text-text-dark hover:border-gold-start hover:shadow-lg'}`}
                         >
                             <div className="absolute top-2 right-2 z-10">
-                                <button onClick={(e) => { e.stopPropagation(); removeTable(table._id); }} className={`p-1 rounded transition-colors ${table.status === 'Occupied' ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-text-muted hover:text-red-500 hover:bg-red-50'}`}><Trash2 size={16}/></button>
+                                <button onClick={(e) => { e.stopPropagation(); removeTable(table.id); }} className={`p-1 rounded transition-colors ${table.status === 'Occupied' ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-text-muted hover:text-red-500 hover:bg-red-50'}`}><Trash2 size={16}/></button>
                             </div>
                             
                             <div className={`text-3xl font-bold font-serif ${table.status === 'Occupied' ? 'text-gold-end' : 'text-ruby-red'}`}>

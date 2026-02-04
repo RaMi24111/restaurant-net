@@ -57,7 +57,19 @@ export default function OrderPage() {
   const fetchOrders = async (date) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/orders?date=${date.toISOString()}`);
+      // Calculate start and end of the selected LOCAL date
+      const start = new Date(date);
+      start.setHours(0, 0, 0, 0);
+      
+      const end = new Date(date);
+      end.setHours(23, 59, 59, 999);
+
+      // Pass as ISO strings (which include timezone offset info if doing it right, or typically UTC)
+      // Standard ISO string is UTC. 
+      // Problem: new Date().toISOString() converts 00:00 Local to 18:30 Prev Day UTC.
+      // Solution: Pass the ISO string of the specific instants we want.
+      
+      const res = await fetch(`/api/orders?from=${start.toISOString()}&to=${end.toISOString()}`);
       const data = await res.json();
       if (data.success) {
         setOrders(data.data);
@@ -72,8 +84,18 @@ export default function OrderPage() {
     }
   };
 
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    fetchOrders(selectedDate);
+  }, [selectedDate]); // Keeping fetchOrders logic here
+
   const calculateTotal = (items) => {
-    return items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    return items.reduce((sum, item) => {
+        const qty = item.count || item.quantity || 0;
+        return sum + (item.price * qty);
+    }, 0);
   };
 
   const dailyTotal = orders.reduce((sum, order) => sum + calculateTotal(order.items), 0);
@@ -87,18 +109,22 @@ export default function OrderPage() {
         <div className="lg:w-1/3 space-y-8">
             <div className="bg-card-white p-6 rounded-2xl shadow-xl border border-gold-start/20">
                 <h2 className="text-2xl font-bold text-ruby-red mb-6 font-serif">Select Date</h2>
-                <div className="calendar-wrapper bg-paper-white rounded-xl p-4 border border-gold-start/10">
-                    <Calendar
-                        mode="single"
-                        value={selectedDate}
-                        onChange={setSelectedDate}
-                        className="rounded-md"
-                        tileClassName={({ date, view }) => {
-                           if (view === 'month' && date.toDateString() === selectedDate.toDateString()) {
-                               return 'react-calendar__tile--active';
-                           }
-                        }}
-                    />
+                <div className="calendar-wrapper bg-paper-white rounded-xl p-4 border border-gold-start/10 min-h-[300px]">
+                    {mounted ? (
+                        <Calendar
+                            mode="single"
+                            value={selectedDate}
+                            onChange={setSelectedDate}
+                            className="rounded-md"
+                            tileClassName={({ date, view }) => {
+                               if (view === 'month' && date.toDateString() === selectedDate.toDateString()) {
+                                   return 'react-calendar__tile--active';
+                               }
+                            }}
+                        />
+                    ) : (
+                        <div className="h-full flex items-center justify-center text-text-muted">Loading calendar...</div>
+                    )}
                 </div>
             </div>
 
@@ -163,8 +189,8 @@ export default function OrderPage() {
                                     <ul className="space-y-1">
                                         {order.items.map((item, idx) => (
                                             <li key={idx} className="flex justify-between text-sm">
-                                                <span className="text-text-muted"><span className="font-bold text-text-dark">{item.quantity}x</span> {item.name}</span>
-                                                <span className="font-medium text-text-dark">₹{item.price * item.quantity}</span>
+                                                <span className="text-text-muted"><span className="font-bold text-text-dark">{item.count || item.quantity}x</span> {item.name}</span>
+                                                <span className="font-medium text-text-dark">₹{item.price * (item.count || item.quantity)}</span>
                                             </li>
                                         ))}
                                     </ul>

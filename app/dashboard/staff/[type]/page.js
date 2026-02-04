@@ -64,7 +64,7 @@ export default function StaffList() {
         const res = await fetch(`/api/staff?id=${id}`, { method: 'DELETE' });
         const data = await res.json();
         if(data.success) {
-            setStaffList(staffList.filter(s => s._id !== id));
+            setStaffList(staffList.filter(s => s.id !== id));
         }
     } catch (error) {
         console.error('Failed to delete staff:', error);
@@ -72,7 +72,7 @@ export default function StaffList() {
   };
 
   const startEdit = (staff) => {
-      setEditingId(staff._id);
+      setEditingId(staff.id);
       setEditForm({ name: staff.name, phone: staff.phone });
   };
 
@@ -85,7 +85,7 @@ export default function StaffList() {
           });
           const data = await res.json();
           if(data.success) {
-              setStaffList(staffList.map(s => s._id === editingId ? data.data : s));
+              setStaffList(staffList.map(s => s.id === editingId ? data.data : s));
               setEditingId(null);
           }
       } catch (error) {
@@ -139,7 +139,7 @@ export default function StaffList() {
                 <div className="space-y-4">
                     {staffList.map((staff) => (
                         <motion.div 
-                            key={staff._id}
+                            key={staff.id}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             className="bg-white p-6 rounded-xl shadow-sm border border-black/5 hover:border-gold-start/50 hover:shadow-md transition-all duration-300 flex justify-between items-center group"
@@ -149,7 +149,7 @@ export default function StaffList() {
                                   {staff.name.charAt(0)}
                                 </div>
                                 <div className="w-full">
-                                    {editingId === staff._id ? (
+                                    {editingId === staff.id ? (
                                         <div className="flex flex-col gap-2 w-full max-w-xs">
                                             <Input 
                                                 value={editForm.name} 
@@ -169,8 +169,8 @@ export default function StaffList() {
                                             <p className="font-bold text-lg text-text-dark group-hover:text-ruby-red transition-colors">{staff.name}</p>
                                             <p className="text-text-muted text-sm">{staff.phone}</p>
                                             <div className="flex items-center gap-2 mt-1">
-                                              <span className="text-xs font-semibold text-gold-start bg-gold-start/10 px-2 py-0.5 rounded-full">ID: {staff._id.slice(-4)}</span>
-                                              <span className="text-xs font-mono text-text-muted/70 bg-gray-100 px-2 py-0.5 rounded-full">Pass: {staff.password}</span>
+                                              <span className="text-xs font-semibold text-gold-start bg-gold-start/10 px-2 py-0.5 rounded-full">ID: {staff.username}</span>
+                                              {staff.tempPassword && <span className="text-xs font-mono text-text-muted/70 bg-gray-100 px-2 py-0.5 rounded-full">Pass: {staff.tempPassword}</span>}
                                             </div>
                                         </>
                                     )}
@@ -178,7 +178,7 @@ export default function StaffList() {
                             </div>
 
                             <div className="flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                                {editingId === staff._id ? (
+                                {editingId === staff.id ? (
                                     <>
                                         <Button size="sm" onClick={saveEdit} className="bg-green-600 text-white hover:bg-green-700 h-9 w-9 p-0 rounded-full"><Save size={16} /></Button>
                                         <Button size="sm" onClick={() => setEditingId(null)} variant="outline" className="border-red-200 text-red-500 hover:bg-red-50 h-9 w-9 p-0 rounded-full"><X size={16} /></Button>
@@ -186,7 +186,7 @@ export default function StaffList() {
                                 ) : (
                                     <>
                                         <Button size="sm" onClick={() => startEdit(staff)} variant="ghost" className="text-accent hover:bg-accent/10 hover:text-ruby-red h-9 w-9 p-0 rounded-full"><Edit2 size={18} /></Button>
-                                        <Button size="sm" onClick={() => handleDelete(staff._id)} variant="ghost" className="text-gray-400 hover:bg-red-50 hover:text-red-500 h-9 w-9 p-0 rounded-full"><Trash2 size={18} /></Button>
+                                        <Button size="sm" onClick={() => handleDelete(staff.id)} variant="ghost" className="text-gray-400 hover:bg-red-50 hover:text-red-500 h-9 w-9 p-0 rounded-full"><Trash2 size={18} /></Button>
                                     </>
                                 )}
                             </div>

@@ -57,7 +57,7 @@ export default function MenuPage() {
 
   const handleEdit = (item) => {
     setFormData(item);
-    setEditId(item._id);
+    setEditId(item.id);
     setActiveCategory(item.category); // Switch to item's category
     setShowModal(true);
   };
@@ -70,7 +70,11 @@ export default function MenuPage() {
     } catch(err) { console.error(err); }
   };
 
-  const filteredItems = items.filter(item => item.category === activeCategory);
+  const filteredItems = items.filter(item => {
+      // Normalize: lowercase, remove special chars (apostrophes, spaces, hyphens)
+      const normalize = (str) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
+      return normalize(item.category) === normalize(activeCategory);
+  });
 
   return (
     <div className="min-h-screen bg-paper-white text-text-dark p-8 font-sans">
@@ -105,7 +109,7 @@ export default function MenuPage() {
                 <AnimatePresence mode="popLayout">
                 {filteredItems.map((item) => (
                     <motion.div 
-                        key={item._id}
+                        key={item.id}
                         layout
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -123,7 +127,7 @@ export default function MenuPage() {
                             )}
                             <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 p-1 rounded-lg backdrop-blur-sm">
                                 <button onClick={() => handleEdit(item)} className="p-1 text-white hover:text-gold-end"><Edit2 size={16} /></button>
-                                <button onClick={() => handleDelete(item._id)} className="p-1 text-white hover:text-red-400"><Trash2 size={16} /></button>
+                                <button onClick={() => handleDelete(item.id)} className="p-1 text-white hover:text-red-400"><Trash2 size={16} /></button>
                             </div>
                         </div>
                         <div className="p-4">

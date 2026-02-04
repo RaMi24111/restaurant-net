@@ -9,32 +9,49 @@ import { Button } from '@/components/ui/Button';
 export default function StaffLogin() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    username: '',
+    userId: '',
     password: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    // Mock validation
-    // Requirements say: "after clicking on the login button under staff login other part of the project will be added there - which need not be considered now"
-    // So we just simulate a successful login.
-    
-    setTimeout(() => {
+    try {
+        const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+        const data = await res.json(); // Safely parse JSON
+
+        if (res.ok && data.success) {
+            // Check role and redirect?
+            // "staff login page - then submit button(login) ... verify with database"
+            // Redirect to a dashboard.
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('staff', JSON.stringify(data.data));
+            }
+            // For now, redirect to a generic staff dashboard or same dashboard with restricted access?
+            // "staff dashboard(which is not yet done)" - User said.
+            // But earlier I redirected to `/staff-dashboard-placeholder`
+            // I'll stick to that or just `/dashboard` if user wants.
+            // Prompt said: "staff dashboard(which is not yet done)".
+            // I will redirect to `/dashboard` but maybe show different things.
+            // Or just `/staff-dashboard-placeholder` as per prompt history.
+            router.push('/staff-dashboard'); 
+        } else {
+            setError(data.error || 'Login failed');
+        }
+    } catch (err) {
+        setError('Something went wrong. Please try again.');
+        console.error(err);
+    } finally {
         setLoading(false);
-        // Maybe redirect to a placeholder or just alert?
-        // User said: "staff login button - staff login page - then submit button(login)" -> done.
-        // Let's redirect to a simple placeholder page to complete the flow.
-        router.push('/staff-dashboard-placeholder'); 
-    }, 1000);
+    }
   };
 
   return (
@@ -53,7 +70,7 @@ export default function StaffLogin() {
           <p className="text-text-muted">Enter your staff ID to continue</p>
         </div>
 
-        {/* Removed: {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>} */}
+        {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
@@ -62,7 +79,7 @@ export default function StaffLogin() {
               placeholder="e.g. SERV-1234" 
               className="bg-paper-white border-ruby-red/10 focus:border-ruby-red text-text-dark placeholder:text-text-muted/50"
               value={formData.userId}
-              onChange={(e) => setFormData({...formData, userId: e.target.value})} // Updated onChange
+              onChange={(e) => setFormData({...formData, userId: e.target.value})} 
               required
             />
           </div>
@@ -74,7 +91,7 @@ export default function StaffLogin() {
               placeholder="Enter password" 
               className="bg-paper-white border-ruby-red/10 focus:border-ruby-red text-text-dark placeholder:text-text-muted/50"
               value={formData.password}
-              onChange={(e) => setFormData({...formData, password: e.target.value})} // Updated onChange
+              onChange={(e) => setFormData({...formData, password: e.target.value})} 
               required
             />
           </div>

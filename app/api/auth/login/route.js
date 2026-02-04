@@ -1,34 +1,70 @@
-import dbConnect from '@/lib/db';
-import Admin from '@/models/Admin';
+import prisma from '@/lib/prisma';
 import { NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
 
 export async function POST(request) {
   try {
-    await dbConnect();
-    const { phone, otp } = await request.json();
+    const { phone, otp, userId, password, type } = await request.json();
 
-    if (!phone || !otp) {
-      return NextResponse.json({ error: 'Phone and OTP are required' }, { status: 400 });
+    // STAFF LOGIN
+    if (userId && password) {
+       // Ideally `userId` should match `username` or `phone` in Staff table? 
+       // In Staff model we have `phone` and `username`.
+       // Let's check against `username` first as per prompt "staff id ... entered into staff login" which usually means the generated ID (username).
+       
+       const staff = await prisma.staff.findFirst({
+         where: {
+            OR: [
+                { username: userId },
+                { phone: userId } // Allow phone login too
+            ]
+         }
+       });
+
+       if (!staff) {
+         return NextResponse.json({ error: 'Staff not found' }, { status: 404 });
+       }
+
+       const isMatch = await bcrypt.compare(password, staff.password);
+       if (!isMatch) {
+         return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+       }
+
+       return NextResponse.json({ success: true, data: staff, role: staff.role }, { status: 200 });
     }
 
-    // Dummy OTP check
-    // In a real app, verify OTP against a stored value or external service
-    if (otp !== '1234') { 
-       // For demo, let's accept '1234' or maybe just proceed if phone exists? 
-       // User requirement: "dummy otp is fine"
-       // Let's enforce 1234 for "security" simulation
-      return NextResponse.json({ error: 'Invalid OTP' }, { status: 401 });
+    // ADMIN LOGIN
+    if (phone && (otp || password)) {
+       // User asked for "admin id, phone number, password" for admin table.
+       // And "dummy phone number, admin id and password"
+       // Frontend sends `phone` and `otp`.
+       // Let's treat `otp` as password for now since the frontend uses that field name.
+       const pwd = otp || password;
+       
+       const admin = await prisma.admin.findUnique({
+         where: { phone }
+       });
+
+       if (!admin) {
+         return NextResponse.json({ error: 'Admin not found' }, { status: 404 });
+       }
+       
+       // Verify password
+       const isMatch = await bcrypt.compare(pwd, admin.password);
+       if (!isMatch) {
+          // Fallback for "dummy" check if needed, but we seeded proper hash.
+          // If we want to allow the "1234" hardcoded bypass from before:
+          if (pwd === '1234') { 
+              // allow for demo if strict mode fails? No, let's enforce DB.
+          }
+          return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+       }
+
+       return NextResponse.json({ success: true, data: admin, role: 'admin' }, { status: 200 });
     }
 
-    const admin = await Admin.findOne({ phone });
-    if (!admin) {
-      return NextResponse.json({ error: 'Admin not found. Please register.' }, { status: 404 });
-    }
+    return NextResponse.json({ error: 'Missing credentials' }, { status: 400 });
 
-    // In a real app, generate a JWT token here
-    // For this simple demo, we might just return success and handle session on client 
-    // or return the admin object
-    return NextResponse.json({ success: true, data: admin }, { status: 200 });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

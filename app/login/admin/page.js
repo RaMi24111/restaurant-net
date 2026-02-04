@@ -15,31 +15,36 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    // Mock login for now as requested
-    // In real scenario, would hit an API
-    if (formData.phone && formData.otp) {
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('admin', JSON.stringify({ phone: formData.phone, role: 'admin' }));
+    try {
+        const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('admin', JSON.stringify(data.data));
+            }
+            router.push('/dashboard');
+        } else {
+            setError(data.error || 'Login failed');
         }
-        // Redirect to dashboard
-        router.push('/dashboard');
-    } else {
-        setError('Please enter valid credentials.');
+    } catch (err) {
+        setError('Something went wrong. Please try again.');
+        console.error(err);
+    } finally {
         setLoading(false);
     }
   };
 
   return (
-
     <div className="min-h-screen bg-paper-white flex items-center justify-center p-6 relative overflow-hidden">
       {/* Decorative Background Elements */}
       <div className="absolute top-0 left-0 w-64 h-64 bg-gold-start/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
@@ -55,11 +60,13 @@ export default function AdminLogin() {
           <p className="text-text-muted">Enter credentials to access the dashboard</p>
         </div>
 
+        {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <label className="text-sm font-semibold text-text-dark">Phone Number / User ID</label>
             <Input 
-              placeholder="Enter your ID" 
+              placeholder="Enter your ID or Phone" 
               className="bg-paper-white border-gold-start/30 focus:border-ruby-red text-text-dark placeholder:text-text-muted/50"
               value={formData.phone}
               onChange={(e) => setFormData({...formData, phone: e.target.value})}

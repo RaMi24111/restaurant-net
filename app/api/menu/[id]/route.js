@@ -1,12 +1,13 @@
-import dbConnect from '@/lib/db';
-import Menu from '@/models/Menu';
+import prisma from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
 export async function GET(request, { params }) {
   try {
-    await dbConnect();
-    const { id } = params;
-    const item = await Menu.findById(id);
+    const { id: idStr } = await params;
+    const id = parseInt(idStr);
+    const item = await prisma.menu.findUnique({
+      where: { id }
+    });
     if (!item) {
       return NextResponse.json({ success: false, error: 'Item not found' }, { status: 404 });
     }
@@ -18,16 +19,17 @@ export async function GET(request, { params }) {
 
 export async function PUT(request, { params }) {
   try {
-    await dbConnect();
-    const { id } = params;
+    const { id: idStr } = await params;
+    const id = parseInt(idStr);
     const body = await request.json();
-    const item = await Menu.findByIdAndUpdate(id, body, {
-      new: true,
-      runValidators: true,
+    
+    // Ensure price is float
+    if(body.price) body.price = parseFloat(body.price);
+
+    const item = await prisma.menu.update({
+      where: { id },
+      data: body
     });
-    if (!item) {
-      return NextResponse.json({ success: false, error: 'Item not found' }, { status: 404 });
-    }
     return NextResponse.json({ success: true, data: item }, { status: 200 });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -36,14 +38,14 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
-    await dbConnect();
-    const { id } = params;
-    const item = await Menu.findByIdAndDelete(id);
-    if (!item) {
-      return NextResponse.json({ success: false, error: 'Item not found' }, { status: 404 });
-    }
+    const { id: idStr } = await params;
+    const id = parseInt(idStr);
+    const item = await prisma.menu.delete({
+      where: { id }
+    });
     return NextResponse.json({ success: true, data: {} }, { status: 200 });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
